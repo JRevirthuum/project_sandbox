@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 볼륨 시각화 및 하드 볼륨 감지 테스트 (디버깅 최종 버전)</title>
+    <title>실시간 볼륨 시각화 및 하드 볼륨 감지 테스트 (안정화 버전)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -162,7 +162,7 @@
             1. 아래 **'테스트 재생'** 버튼을 클릭하여 마이크/카메라 접근을 허용합니다.<br>
             2. 하단 슬라이더를 조절하여 볼륨을 확인합니다.<br>
             3. **휴대폰 하드웨어 볼륨을 낮추면** 상단에 경고 메시지가 표시되며 레벨 미터가 낮아집니다.<br>
-            *(디버깅 힌트: 콘솔에서 [HighFreq Check] Level: 0~1이 잡힐 때 경고가 표시됩니다.)*
+            *(안정화 로직 적용: 경고는 2초 이상 하드 볼륨이 낮을 때 표시됩니다.)*
         </div>
         
         <div id="volumeWarningPopup">
@@ -211,11 +211,14 @@ let micAnalyser = null; // 마이크 분석용 Analyser
 let micStream = null; // getUserMedia로 획득할 미디어 스트림
 
 const TARGET_FREQUENCY = 19000; // 19kHz 고주파
-const VOLUME_THRESHOLD = 5; // **** [수정] 임계값을 5로 낮춤: 노이즈 캔슬링 환경에서 0~1이 잡히는 경우 대비 ****
-let isHardwareVolumeLow = false; // 하드 볼륨 부족 상태 플래그
+const VOLUME_THRESHOLD = 5; // **** [안정화 임계값] ****
+let isHardwareVolumeLow = false; // 하드 볼륨 부족 상태 확정 플래그
 
-let audioDataArray = null; // [수정] 오디오 파일 분석 전용 데이터 배열
-let micDataArray = null;   // [수정] 마이크 분석 전용 데이터 배열
+let audioDataArray = null; 
+let micDataArray = null;   
+
+let volumeLowTimer = null; // [안정화] 볼륨 부족 상태를 확정하기 위한 타이머
+const CONFIRMATION_DELAY = 2000; // 2초 (2000ms) 동안 낮아야 경고 표시 확정
 
 // ----------------- 캔버스 크기 조절 함수 -----------------
 function resizeCanvas() {
@@ -284,7 +287,6 @@ function setupMicrophone(stream) {
     // 1. 마이크 분석기 생성 (하드 볼륨 감지 전용)
     micAnalyser = audioCtx.createAnalyser();
     micAnalyser.fftSize = 2048; // 정밀 분석용
-    // micAnalyser.smoothingTimeConstant = 0.1; // 빠른 반응 속도 옵션 (필요 시 주석 해제하여 테스트)
     
     // [수정] 마이크 분석 전용 데이터 배열 초기화
     micDataArray = new Uint8Array(micAnalyser.frequencyBinCount); 
@@ -311,7 +313,7 @@ function draw() {
     if (micAnalyser) {
         const bufferLength = micAnalyser.frequencyBinCount;
         
-        // [수정] 마이크 분석기의 데이터를 전용 배열에 복사
+        // 마이크 분석기의 데이터를 전용 배열에 복사
         micAnalyser.getByteFrequencyData(micDataArray); 
 
         const sampleRate = audioCtx.sampleRate;
@@ -323,13 +325,36 @@ function draw() {
         console.log(`[HighFreq Check] Target Index: ${targetIndex}, Level: ${level}`);
         // ----------------------------------------------------
 
-        // [수정] 임계값 5와 비교
         if (level < VOLUME_THRESHOLD) {
-            isHardwareVolumeLow = true;
-            showVolumeWarning();
+            // 레벨이 임계값보다 낮음 (볼륨 부족 가능성 높음)
+
+            if (!volumeLowTimer && !isHardwareVolumeLow) {
+                // 타이머가 작동 중이 아니고, 아직 부족 상태로 확정되지 않았다면
+                
+                // 2초 후 경고를 최종 확정하는 타이머 시작
+                volumeLowTimer = setTimeout(() => {
+                    isHardwareVolumeLow = true; // 최종 확정
+                    showVolumeWarning();
+                }, CONFIRMATION_DELAY); 
+                console.log(`[Timer] Volume low signal started. Confirming in ${CONFIRMATION_DELAY}ms.`);
+
+            } 
+
         } else {
-            isHardwareVolumeLow = false;
-            hideVolumeWarning();
+            // 레벨이 임계값 이상으로 올라옴 (볼륨 정상 상태)
+            
+            // 1. 타이머가 작동 중이면 취소
+            if (volumeLowTimer) {
+                clearTimeout(volumeLowTimer);
+                volumeLowTimer = null;
+                console.log("[Timer] Volume OK signal received. Timer cancelled.");
+            }
+
+            // 2. 경고 상태가 해제되었음을 확정
+            if (isHardwareVolumeLow) {
+                isHardwareVolumeLow = false;
+                hideVolumeWarning();
+            }
         }
     }
     // ------------------- [A] 하드 볼륨 감지 끝 -------------------
@@ -340,7 +365,7 @@ function draw() {
         return;
     }
 
-    // [수정] 오디오 파일 Analyser의 데이터를 전용 배열에 복사
+    // 오디오 파일 Analyser의 데이터를 전용 배열에 복사
     analyser.getByteFrequencyData(audioDataArray); 
 
     // 배경색 (KB 스타일 밝은 회색)
@@ -421,7 +446,6 @@ function draw() {
 --------------------------------------------
 */
 function showVolumeWarning() {
-    // [확인] style.display가 'none'일 때만 'block'으로 설정
     if ($warningPopup.style.display === 'none') {
         $warningPopup.style.display = 'block';
     }
