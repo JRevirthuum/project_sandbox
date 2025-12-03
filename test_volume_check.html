@@ -211,7 +211,7 @@ let micAnalyser = null; // 마이크 분석용 Analyser
 let micStream = null; // getUserMedia로 획득할 미디어 스트림
 
 const TARGET_FREQUENCY = 19000; // 19kHz 고주파
-const VOLUME_THRESHOLD = 5; // **** [안정화 임계값] ****
+const VOLUME_THRESHOLD = 5; // **** 임계값 ****
 let isHardwareVolumeLow = false; // 하드 볼륨 부족 상태 확정 플래그
 
 let audioDataArray = null; 
@@ -259,7 +259,7 @@ function setupAudioContext() {
     // 오디오 파일 -> Analyser 연결
     source.connect(analyser);
     
-    // [수정] 오디오 파일 분석 전용 데이터 배열 초기화
+    // 오디오 파일 분석 전용 데이터 배열 초기화
     audioDataArray = new Uint8Array(analyser.frequencyBinCount);
 }
 
@@ -288,7 +288,7 @@ function setupMicrophone(stream) {
     micAnalyser = audioCtx.createAnalyser();
     micAnalyser.fftSize = 2048; // 정밀 분석용
     
-    // [수정] 마이크 분석 전용 데이터 배열 초기화
+    // 마이크 분석 전용 데이터 배열 초기화
     micDataArray = new Uint8Array(micAnalyser.frequencyBinCount); 
     
     // 2. 마이크 스트림 소스 생성
@@ -329,12 +329,14 @@ function draw() {
             // 레벨이 임계값보다 낮음 (볼륨 부족 가능성 높음)
 
             if (!volumeLowTimer && !isHardwareVolumeLow) {
-                // 타이머가 작동 중이 아니고, 아직 부족 상태로 확정되지 않았다면
+                // 아직 타이머가 시작되지 않았고, 부족 상태로 확정되지 않았다면
                 
                 // 2초 후 경고를 최종 확정하는 타이머 시작
                 volumeLowTimer = setTimeout(() => {
+                    // 2초 후에도 이 함수가 실행되었다면, 지속적으로 레벨이 낮았던 것임.
                     isHardwareVolumeLow = true; // 최종 확정
                     showVolumeWarning();
+                    volumeLowTimer = null; // 타이머 실행 완료 후 초기화
                 }, CONFIRMATION_DELAY); 
                 console.log(`[Timer] Volume low signal started. Confirming in ${CONFIRMATION_DELAY}ms.`);
 
@@ -343,7 +345,7 @@ function draw() {
         } else {
             // 레벨이 임계값 이상으로 올라옴 (볼륨 정상 상태)
             
-            // 1. 타이머가 작동 중이면 취소
+            // 1. 타이머가 작동 중이면 즉시 취소
             if (volumeLowTimer) {
                 clearTimeout(volumeLowTimer);
                 volumeLowTimer = null;
