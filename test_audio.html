@@ -36,6 +36,8 @@
         #visualizer {
             display: block;
             margin: 20px auto;
+            width: 100%;
+            max-width: 100%;
             background-color: #F5F7FA;
             border-radius: 6px;
             border: 1px solid #E8ECF1;
@@ -149,7 +151,7 @@
 
         <audio id="myAudio" src="file_example_MP3_700KB.mp3" type="audio/mp3" preload="auto" loop></audio>
 
-        <canvas id="visualizer" width="360" height="40"></canvas>
+        <canvas id="visualizer" height="40"></canvas>
         
         <label for="volumeSlider">볼륨 조절</label>
         <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1">
@@ -170,6 +172,24 @@
         const muteButton = document.getElementById('muteButton');
         const canvas = document.getElementById('visualizer');
         const canvasCtx = canvas.getContext('2d');
+
+        // ----------------- 캔버스 크기 조절 함수 -----------------
+        function resizeCanvas() {
+            const container = document.querySelector('.container');
+            const containerWidth = container.clientWidth - 56; // padding 28px * 2
+            canvas.width = containerWidth;
+            canvas.style.width = containerWidth + 'px';
+        }
+
+        // 초기 캔버스 크기 설정
+        window.addEventListener('load', () => {
+            resizeCanvas();
+        });
+
+        // 윈도우 리사이즈 시 캔버스 크기 조절
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
 
         // ----------------- Web Audio API 설정 -----------------
         const AudioContext = window.AudioContext || window.webkitAudioContext;
