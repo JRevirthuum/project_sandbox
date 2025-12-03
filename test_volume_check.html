@@ -446,8 +446,18 @@ function draw() {
 --------------------------------------------
 */
 function showVolumeWarning() {
-    if ($warningPopup.style.display === 'none') {
-        $warningPopup.style.display = 'block';
+    console.log("!!! ATTENTION: Attempting to show Volume Warning Popup !!!");
+    const popup = document.getElementById('volumeWarningPopup');
+    
+    // [디버깅] 엘리먼트 존재 여부 및 현재 상태 확인
+    if (!popup) {
+        console.error("Critical Error: #volumeWarningPopup DOM element not found.");
+        return;
+    }
+    // console.dir(popup); // 이 코드를 실행하여 엘리먼트의 속성을 확인해 보세요.
+
+    if (popup.style.display === 'none') {
+        popup.style.display = 'block';
     }
 }
 
@@ -565,3 +575,4 @@ muteButton.addEventListener('click', function() {
     </script>
 </body>
 </html>
+
