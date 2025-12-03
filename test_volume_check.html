@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 볼륨 시각화 및 하드 볼륨 감지 테스트 (안정화 버전)</title>
+    <title>실시간 볼륨 시각화 및 하드 볼륨 감지 테스트 (카운터 안정화 버전)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -161,8 +161,8 @@
             **[사용 설명]**<br>
             1. 아래 **'테스트 재생'** 버튼을 클릭하여 마이크/카메라 접근을 허용합니다.<br>
             2. 하단 슬라이더를 조절하여 볼륨을 확인합니다.<br>
-            3. **휴대폰 하드웨어 볼륨을 낮추면** 상단에 경고 메시지가 표시되며 레벨 미터가 낮아집니다.<br>
-            *(안정화 로직 적용: 경고는 2초 이상 하드 볼륨이 낮을 때 표시됩니다.)*
+            3. **휴대폰 하드웨어 볼륨을 낮추고 2초 이상 유지**하면 상단에 경고 메시지가 표시됩니다.<br>
+            *(안정화 로직 적용: 경고는 2초 (120 프레임) 이상 하드 볼륨이 낮을 때 확정됩니다.)*
         </div>
         
         <div id="volumeWarningPopup">
@@ -217,8 +217,8 @@ let isHardwareVolumeLow = false; // 하드 볼륨 부족 상태 확정 플래그
 let audioDataArray = null; 
 let micDataArray = null;   
 
-let volumeLowTimer = null; // [안정화] 볼륨 부족 상태를 확정하기 위한 타이머
-const CONFIRMATION_DELAY = 2000; // 2초 (2000ms) 동안 낮아야 경고 표시 확정
+let lowLevelCounter = 0; // [안정화] 낮은 레벨이 지속된 프레임 수 카운터
+const CONFIRMATION_FRAMES = 120; // 2초 (60fps 기준 120프레임)
 
 // ----------------- 캔버스 크기 조절 함수 -----------------
 function resizeCanvas() {
@@ -322,34 +322,32 @@ function draw() {
         const level = micDataArray[targetIndex]; 
 
         // ------------------- [디버깅 로그] -------------------
-        console.log(`[HighFreq Check] Target Index: ${targetIndex}, Level: ${level}`);
+        console.log(`[HighFreq Check] Target Index: ${targetIndex}, Level: ${level}, Counter: ${lowLevelCounter}`);
         // ----------------------------------------------------
 
         if (level < VOLUME_THRESHOLD) {
             // 레벨이 임계값보다 낮음 (볼륨 부족 가능성 높음)
 
-            if (!volumeLowTimer && !isHardwareVolumeLow) {
-                // 아직 타이머가 시작되지 않았고, 부족 상태로 확정되지 않았다면
-                
-                // 2초 후 경고를 최종 확정하는 타이머 시작
-                volumeLowTimer = setTimeout(() => {
-                    // 2초 후에도 이 함수가 실행되었다면, 지속적으로 레벨이 낮았던 것임.
-                    isHardwareVolumeLow = true; // 최종 확정
-                    showVolumeWarning();
-                    volumeLowTimer = null; // 타이머 실행 완료 후 초기화
-                }, CONFIRMATION_DELAY); 
-                console.log(`[Timer] Volume low signal started. Confirming in ${CONFIRMATION_DELAY}ms.`);
+            if (!isHardwareVolumeLow) {
+                // 아직 확정된 부족 상태가 아니라면 카운트 증가
+                lowLevelCounter++;
 
-            } 
+                if (lowLevelCounter >= CONFIRMATION_FRAMES) {
+                    // 120 프레임 이상 지속적으로 낮음 -> 확정
+                    isHardwareVolumeLow = true; 
+                    showVolumeWarning();
+                    console.log("[Counter] Volume Low Confirmed after 2 seconds.");
+                }
+            }
+            // 확정된 상태라면 카운터 유지 (깜빡임 방지)
 
         } else {
             // 레벨이 임계값 이상으로 올라옴 (볼륨 정상 상태)
             
-            // 1. 타이머가 작동 중이면 즉시 취소
-            if (volumeLowTimer) {
-                clearTimeout(volumeLowTimer);
-                volumeLowTimer = null;
-                console.log("[Timer] Volume OK signal received. Timer cancelled.");
+            // 1. 카운터 즉시 초기화
+            if (lowLevelCounter > 0) {
+                lowLevelCounter = 0;
+                console.log("[Counter] Reset. Volume OK signal received.");
             }
 
             // 2. 경고 상태가 해제되었음을 확정
