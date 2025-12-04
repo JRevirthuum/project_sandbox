@@ -1,5 +1,7 @@
 # 💻 모바일 인앱 환경: 하드웨어 볼륨 감지 기능 구현 보고서
 
+<img width="490" height="848" alt="image" src="https://github.com/user-attachments/assets/c55cc714-4f11-4a0a-91c6-d00955b6681e" />
+
 ## 🚧 프로젝트 개요
 
 본 문서는 WebRTC 기반 화상 상담 솔루션의 고객 경험 향상을 위해, **하드웨어 볼륨 음소거 상태**를 웹 기술(Web Audio API)만으로 간접 감지하는 기능의 연구 및 구현 과정을 기록한다.
