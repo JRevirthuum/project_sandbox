@@ -1,31 +1,39 @@
-# Dracula for [Foobar](https://foobar.com)
+# 불가청 주파수 대역을 이용한 스마트폰 마스터볼륨 음소거 여부 알림
 
-> A dark theme for [Foobar](https://foobar.com).
+<img width="490" height="848" alt="image" src="https://github.com/user-attachments/assets/c55cc714-4f11-4a0a-91c6-d00955b6681e" />
 
-![Screenshot](./screenshot.png)
+## 실패했음
 
-## Install
+우선 실패했음을 말하는 이유는 시간 낭비를 줄이기 위해서이다.
+하지만 실패까지 도달한 기록을 남김.
 
-All instructions can be found at [draculatheme.com/foobar](https://draculatheme.com/foobar).
+## 특정 패턴을 마이크만 인지하게 하면 되지 않을까?
 
-## Team
+안드로이드, 아이폰의 정책상 이용자가 하드 볼륨 음소거(물리적으로 음소거 처리)를 시키면
+볼륨의 뮤트 상태임을 읽어들이거나, 임의로 조작하여 변경 할 수 없다.
 
-This theme is maintained by the following person(s) and a bunch of [awesome contributors](https://github.com/dracula/foobar/graphs/contributors).
+물론, 네이티브 앱일 경우나 하이브리드 형식이라면 하드 볼륨 상태에 대한 값을 상위 계층에서 가져올 수 있고
+온전히 브라우저 만으로는 현재 불가능하다. 그래서, 한 가지 가설을 세워서 작업을 진행했다.
 
-| [![Zeno Rocha](https://github.com/zenorocha.png?size=100)](https://github.com/zenorocha) | [![Lucas de França](https://github.com/luxonauta.png?size=100)](https://github.com/luxonauta) |
-| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Zeno Rocha](https://github.com/zenorocha)                                               | [Lucas de França](https://github.com/luxonauta)                                               |
+인간이 들을 수 없는 불가청 주파수에 패턴을 심어서 송출하고 
+스마트폰에서는 소리를 캐치할 수 있겠다는 가설을 세워서 아래의 원칙을 정했다.
 
-## Community
+1. 불가청 주파수에 심은 패턴을 마이크가 들을 수 있다면 이용자에게 볼륨업을 요청 할 필요가 없다.
+2. 불가청 주파수에 심은 패턴을 마이크가 일정 시간동안 확인 할 수 없다면 이용자에게 볼륨업을 요청 할 필요가 없다.
 
-- [Twitter](https://twitter.com/draculatheme) - Best for getting updates about themes and new stuff.
-- [GitHub](https://github.com/dracula/dracula-theme/discussions) - Best for asking questions and discussing issues.
-- [Discord](https://draculatheme.com/discord-invite) - Best for hanging out with the community.
+그렇게 되면, 이용자는  카메라와 마이크를 설정하는 화면에서 음소거를 했거나 볼륨이 낮을 경우,
+볼륨업을 요청하는 인터페이스를 보게 되어, 현재 상태를 인지하고 하드 볼륨을 올릴것이라 기대했다.
 
-## Dracula PRO
+## 결과
 
-[![Dracula PRO](./.github/dracula-pro.png)](https://draculatheme.com/pro)
+PC : 95% 성공
+Mobile : 실패
 
-## License
+휴대폰 기기에서 실패한 원인은 다름아닌, 노이즈캔슬링 때문이다.
 
-[MIT License](./LICENSE)
+생활 소음과 섞여 있더라도 특정 패턴을 찾는게 어렵지 않았다.
+특히 PC 환경일 경우 스피커 환경과 마이크 환경을 분리했을 경우가 더욱 잘 되었다.
+그러나 스마트폰 기기 설계상 노이즈캔슬링이 사생활보호를 목적으로 걸려있다보니 브라우저 API로는 끌 수 없다.
+
+하지만 하는 내내 흥미로웠고 즐거웠으니, 
+스스로 한잔해. 🍻
