@@ -1,6 +1,8 @@
-# 💻 모바일 인앱 환경: 하드웨어 볼륨 감지 기능 구현 보고서
+# 💻 모바일 인앱 환경: 하드웨어 볼륨 감지 기능 구현
 
 <img width="490" height="848" alt="image" src="https://github.com/user-attachments/assets/c55cc714-4f11-4a0a-91c6-d00955b6681e" />
+
+> 그러나 실패했다. 그래도 실패 할 때까지 진행된 여정을 기록했다.
 
 ## 🚧 프로젝트 개요
 
